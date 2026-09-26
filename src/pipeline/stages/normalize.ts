@@ -59,8 +59,11 @@ export function normalizeTitle(title: string): { normalized: string; stem: strin
     .toLowerCase()
     .replace(/\([^)]*\)|\[[^\]]*\]/g, " ") // drop parentheticals: "(Remote)", "[Contract]"
     .replace(/[–—]/g, "-");
-  // Drop trailing " - location/team" qualifiers: "Software Developer - Toronto"
-  t = t.replace(/\s+[-|,/]\s+.*$/, "");
+  // Split "Title - Qualifier, Qualifier" and drop qualifiers that are only a
+  // place or work arrangement ("Software Developer - Toronto"); keep the rest
+  // ("Software Engineer, Platform").
+  const [head, ...qualifiers] = t.split(/\s+[-|/]\s+|,\s*/);
+  t = [head, ...qualifiers.filter((q) => !isPlaceOrArrangement(q))].join(" ");
   t = t.replace(/[^a-z0-9+#.\s-]/g, " ");
   for (const [re, rep] of ABBREVIATIONS) t = t.replace(re, rep);
   const normalized = t.replace(/[.-]/g, " ").replace(/\s+/g, " ").trim();
@@ -162,6 +165,17 @@ export function parseLocation(text: string | null): ParsedLocation {
   if (explicitCanada && looksForeign && !province) country = "CA"; // "Remote — Canada or USA"
 
   return { city: city && cityKey !== "canada" ? city : null, province, country, remoteHint };
+}
+
+function isPlaceOrArrangement(q: string): boolean {
+  const k = stripAccents(q).toLowerCase().replace(/[^a-z\s.'-]/g, " ").replace(/\s+/g, " ").trim();
+  if (!k) return true;
+  return k.split(" ").every(
+    (w) =>
+      NOISE.has(w) ||
+      !!PROVINCES[w.toUpperCase()] ||
+      ["remote", "hybrid", "onsite", "on-site", "canada", "nights", "days", "weekends"].includes(w),
+  ) || !!CITY_PROVINCE[k] || PROVINCE_BY_NAME.has(k) || /^(remote|hybrid|on-?site)\b/.test(k);
 }
 
 // ── Workplace & employment type ─────────────────────────────────────────────

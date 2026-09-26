@@ -2,13 +2,25 @@ import { PgBoss } from "pg-boss";
 import type { DB } from "@/db/client";
 import { log } from "@/lib/log";
 import { configuredSources } from "@/sources/registry";
+import { jobsNeedingTimeBasedReverify, recheckDue } from "@/evidence/freshness";
+import { knownDomains, verifyJob } from "@/evidence/verify-job";
 import { runSource } from "./run";
 
 export const QUEUES = {
   ingestAll: "ingest-all",
   ingestSource: "ingest-source",
   ingestDead: "ingest-dead-letter",
+  recheck: "freshness-recheck",
 } as const;
+
+/** Recheck due postings, then re-verify every job whose time-based signals may have changed. */
+export async function recheckAndReverify(db: DB, now = new Date()) {
+  const rechecked = await recheckDue(db, configuredSources(), now);
+  const ids = new Set([...rechecked, ...(await jobsNeedingTimeBasedReverify(db, now))]);
+  const domains = await knownDomains(db);
+  for (const id of ids) await verifyJob(db, id, now, domains);
+  return { rechecked: rechecked.length, reverified: ids.size };
+}
 
 /**
  * Background worker. `ingest-all` runs on a cron and fans out one
@@ -16,7 +28,7 @@ export const QUEUES = {
  * run up to 3 times with exponential backoff, then moves it to the
  * dead-letter queue. (Per-posting retries happen inside runSource.)
  */
-export async function startWorker(db: DB, connectionString: string, cron = "0 */6 * * *") {
+export async function startWorker(db: DB, connectionString: string, cron = "0 */6 * * *", recheckCron = "15 * * * *") {
   const boss = new PgBoss(connectionString);
   boss.on("error", (e) => log("pg-boss error", { error: (e as Error).message }));
   await boss.start();
@@ -29,7 +41,13 @@ export async function startWorker(db: DB, connectionString: string, cron = "0 */
     retryDelay: 30,
     deadLetter: QUEUES.ingestDead,
   });
+  await boss.createQueue(QUEUES.recheck, { retryLimit: 3, retryBackoff: true, retryDelay: 60 });
   await boss.schedule(QUEUES.ingestAll, cron);
+  await boss.schedule(QUEUES.recheck, recheckCron);
+
+  await boss.work(QUEUES.recheck, async () => {
+    log("freshness recheck finished", await recheckAndReverify(db));
+  });
 
   await boss.work(QUEUES.ingestAll, async () => {
     for (const s of configuredSources()) {
@@ -48,6 +66,6 @@ export async function startWorker(db: DB, connectionString: string, cron = "0 */
     log("source run dead-lettered", { key: job!.data.key });
   });
 
-  log("worker started", { cron });
+  log("worker started", { cron, recheckCron });
   return boss;
 }

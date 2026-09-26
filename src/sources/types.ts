@@ -16,6 +16,8 @@ export interface SourceDescriptor {
   allowedUse: string;
   rateLimitPerMin: number;
   isDemo: boolean;
+  /** The employer's own board or careers page, as opposed to an aggregator. */
+  employerOwned: boolean;
   /**
    * The employer this source belongs to, when the source is an employer's own
    * board. Phase 3 employer resolution uses it as the strongest hint.
@@ -72,6 +74,8 @@ export interface ParsedPosting {
   applyUrl: string | null;
   postedAt: Date | null;
   salary: SalaryHint | null;
+  /** Skills the source lists explicitly (not inferred). */
+  skills?: string[];
 }
 
 export interface JobSource {
@@ -79,4 +83,17 @@ export interface JobSource {
   fetch(cursor: string | null): Promise<FetchPage>;
   parse(raw: RawPosting): ParsedPosting;
   checkLive(externalRef: string): Promise<LiveStatus>;
+  /**
+   * For employer-owned boards: check that a page on the employer's own domain
+   * links to this board (the evidence behind identity CONFIRMED).
+   */
+  probeIdentity?(): Promise<IdentityProbe>;
+}
+
+export interface IdentityProbe {
+  /** true = link found, false = page fetched but no link, null = couldn't check. */
+  linked: boolean | null;
+  checkedAt: Date;
+  evidenceUrl?: string;
+  detail: string;
 }

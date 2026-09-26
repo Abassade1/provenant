@@ -1,7 +1,8 @@
 import { z } from "zod";
 import { HttpError, politeFetch, politeFetchJson, type FetchLike } from "@/lib/http";
 import { decodeEntities, htmlToText } from "@/lib/text";
-import type { EmployerHint, FetchPage, JobSource, LiveStatus, ParsedPosting, RawPosting, SourceDescriptor } from "../types";
+import { probeCareersPageLinksBoard } from "../identity-probe";
+import type { EmployerHint, FetchPage, IdentityProbe, JobSource, LiveStatus, ParsedPosting, RawPosting, SourceDescriptor } from "../types";
 
 /**
  * Greenhouse Job Board API — public, unauthenticated GET endpoints that
@@ -66,6 +67,7 @@ export class GreenhouseSource implements JobSource {
         "Read the employer's own published postings, show a summary with attribution, and link to the employer's application page.",
       rateLimitPerMin: cfg.rateLimitPerMin ?? 30,
       isDemo: false,
+      employerOwned: true,
       employerHint: cfg.employer,
     };
   }
@@ -118,5 +120,17 @@ export class GreenhouseSource implements JobSource {
     } catch (e) {
       return { state: "UNKNOWN", checkedAt, evidenceUrl: url, detail: `Could not check: ${(e as Error).message}` };
     }
+  }
+
+  probeIdentity(): Promise<IdentityProbe> {
+    const t = this.cfg.boardToken.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    return probeCareersPageLinksBoard(
+      this.cfg.employer,
+      [
+        new RegExp(`(job-)?boards(-api)?\\.greenhouse\\.io/(v1/boards/)?${t}\\b`, "i"),
+        new RegExp(`greenhouse\\.io/embed/job_board(/js)?\\?for=${t}\\b`, "i"),
+      ],
+      this.opts(),
+    );
   }
 }

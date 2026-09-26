@@ -2,6 +2,8 @@ import { desc, eq, sql } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { canonicalJob, employer, ingestionError, ingestionRun, jobSourceRecord, source } from "@/db/schema";
 import { requireAdminDev } from "@/lib/admin-guard";
+import { AdminNav } from "@/components/admin-nav";
+import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 
@@ -55,6 +57,7 @@ export default async function AdminJobsPage() {
 
   return (
     <main className="mx-auto max-w-7xl px-4 py-8">
+      <AdminNav active="/admin/jobs" />
       <h1 className="text-2xl font-semibold">Canonical jobs</h1>
       <p className="mt-1 text-sm text-muted">
         Raw admin view (Phase 2). {jobs.length} jobs · {openErrors[0]?.n ?? 0} dead-lettered ingestion errors.
@@ -76,7 +79,11 @@ export default async function AdminJobsPage() {
           <tbody>
             {jobs.map((j) => (
               <tr key={j.id} className="border-b border-line align-top">
-                <td className="py-2 pr-4">{j.title}</td>
+                <td className="py-2 pr-4">
+                  <Link href={`/admin/jobs/${j.id}`} className="text-accent underline">
+                    {j.title}
+                  </Link>
+                </td>
                 <td className="py-2 pr-4">
                   {j.employer}
                   {j.isDemo && <span className="text-muted"> (demo)</span>}

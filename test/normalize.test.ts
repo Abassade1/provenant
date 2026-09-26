@@ -7,7 +7,9 @@ describe("normalizeTitle", () => {
   it.each([
     ["Sr. Software Engineer, Platform (Hybrid)", "senior software engineer platform", "software engineer platform"],
     ["Software Developer - Toronto", "software developer", "software developer"],
-    ["Registered Nurse – Medical/Surgical", "registered nurse", "registered nurse"],
+    ["Registered Nurse – Medical/Surgical", "registered nurse medical surgical", "registered nurse medical surgical"],
+    ["Senior Software Engineer - Platform", "senior software engineer platform", "software engineer platform"],
+    ["Data Analyst - Remote, Canada", "data analyst", "data analyst"],
     ["Jr Dev", "junior developer", "developer"],
     ["Data Analyst II", "data analyst ii", "data analyst"],
     ["Lead", "lead", "lead"],

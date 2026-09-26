@@ -1,5 +1,6 @@
-import type { FetchPage, JobSource, LiveStatus, ParsedPosting, RawPosting, SourceDescriptor } from "../types";
+import type { FetchPage, IdentityProbe, JobSource, LiveStatus, ParsedPosting, RawPosting, SourceDescriptor } from "../types";
 import { buildDemoJobs, DEMO_EMPLOYERS, type DemoEmployer, type DemoJob } from "./data";
+import { DemoCommunityBoard } from "./community-board";
 
 const DAY = 24 * 60 * 60 * 1000;
 
@@ -25,6 +26,7 @@ export class DemoSource implements JobSource {
       allowedUse: "Any use. Must always be labelled as demo data.",
       rateLimitPerMin: 10_000,
       isDemo: true,
+      employerOwned: true,
       employerHint: {
         name: employer.name,
         domain: employer.domain,
@@ -35,7 +37,8 @@ export class DemoSource implements JobSource {
 
   async fetch(_cursor: string | null): Promise<FetchPage> {
     return {
-      postings: this.jobs.map((j) => ({ externalRef: j.externalRef, payload: j })),
+      // Jobs older than 25 days have been taken down by the (demo) employer.
+      postings: this.jobs.filter((j) => j.postedDaysAgo <= 25).map((j) => ({ externalRef: j.externalRef, payload: j })),
       nextCursor: null,
     };
   }
@@ -54,7 +57,8 @@ export class DemoSource implements JobSource {
       url,
       applyUrl: `${url}/apply`,
       postedAt: new Date(this.now().getTime() - j.postedDaysAgo * DAY),
-      salary: j.salaryText ? { text: j.salaryText } : null,
+      salary: null, // parsed from the description so the evidence quotes the posting's own sentence
+      skills: j.skills,
     };
   }
 
@@ -67,11 +71,21 @@ export class DemoSource implements JobSource {
     }
     return { state: "LIVE", checkedAt, detail: "Listed on the demo employer board" };
   }
+
+  /** Demo stand-in for fetching the careers page: the fixture says whether it links the board. */
+  async probeIdentity(): Promise<IdentityProbe> {
+    const checkedAt = this.now();
+    const careersUrl = `https://${this.employer.domain}/careers`;
+    return this.employer.careersLinksBoard
+      ? { linked: true, checkedAt, evidenceUrl: careersUrl, detail: `${careersUrl} (demo) links to this job board.` }
+      : { linked: false, checkedAt, evidenceUrl: careersUrl, detail: `${careersUrl} (demo) doesn't link to this job board.` };
+  }
 }
 
-export function createDemoSources(now?: () => Date): DemoSource[] {
+export function createDemoSources(now?: () => Date): JobSource[] {
   const all = buildDemoJobs();
-  return DEMO_EMPLOYERS.map(
-    (e) => new DemoSource(e, all.filter((j) => j.employerSlug === e.slug), now),
-  );
+  return [
+    ...DEMO_EMPLOYERS.map((e) => new DemoSource(e, all.filter((j) => j.employerSlug === e.slug), now)),
+    new DemoCommunityBoard(all, now),
+  ];
 }

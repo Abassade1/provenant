@@ -1,4 +1,12 @@
-# Status rule table (draft for Checkpoint 1)
+# Status rule table
+
+**Implemented in Phase 3** at `src/verification/` — `catalog.ts` (this table and the signal
+catalog, in plain language), `signals.ts` (computes signals), `status.ts` (applies the rule
+table), `domains.ts` (ATS/lookalike-domain matching), `patterns.ts` (scam-text matching). The
+module is pure (no I/O) and structurally isolated: `test/verification-isolation.test.ts` asserts
+it imports nothing outside itself and never mentions billing/plan/sponsorship. The public
+["How verification works"](../src/app/docs/verification/page.tsx) page renders straight from this
+same catalog, so it can't drift from the code.
 
 Statuses are derived from active signals by the **first matching rule**. Weights only order signals in the UI. They are never summed into a score or shown as a number.
 

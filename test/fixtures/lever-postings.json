@@ -1,0 +1,26 @@
+[
+  {
+    "id": "7d1c5e2a-0001-4a7b-9d1e-000000000001",
+    "text": "Data Engineer",
+    "categories": { "commitment": "Full-time", "location": "Vancouver, BC", "team": "Data" },
+    "createdAt": 1758200000000,
+    "hostedUrl": "https://jobs.lever.co/cobaltfixture/7d1c5e2a-0001-4a7b-9d1e-000000000001",
+    "applyUrl": "https://jobs.lever.co/cobaltfixture/7d1c5e2a-0001-4a7b-9d1e-000000000001/apply",
+    "descriptionPlain": "Build pipelines for our logistics platform.",
+    "lists": [{ "text": "What you'll need", "content": "<li>Python</li><li>Airflow</li>" }],
+    "additionalPlain": "This job posting is for an existing vacancy.",
+    "workplaceType": "hybrid",
+    "country": "CA",
+    "salaryRange": { "min": 110000, "max": 135000, "currency": "CAD", "interval": "per-year-salary" }
+  },
+  {
+    "id": "7d1c5e2a-0002-4a7b-9d1e-000000000002",
+    "text": "Warehouse Lead (Nights)",
+    "categories": { "commitment": "Full-time", "location": "Surrey" },
+    "createdAt": 1758300000000,
+    "hostedUrl": "https://jobs.lever.co/cobaltfixture/7d1c5e2a-0002-4a7b-9d1e-000000000002",
+    "descriptionPlain": "Lead a night-shift team. Pay: $27.50 - $31.00 per hour.",
+    "workplaceType": "onsite",
+    "country": "CA"
+  }
+]

@@ -1,0 +1,37 @@
+[
+  {
+    "jobId": "90000001",
+    "title": "Senior Software Engineer - Platform",
+    "employerName": "Maplewood Analytics Inc.",
+    "city": "Toronto",
+    "province": "ON",
+    "workplace": "Hybrid",
+    "employmentType": "Permanent, full time",
+    "salaryText": "$120,000 to $145,000 annually",
+    "datePosted": "2026-09-13",
+    "description": "We build forecasting tools for Canadian grocers. TypeScript & Go. PostgreSQL. The salary range for this role is $120,000 - $145,000 CAD per year. This posting is for an existing vacancy."
+  },
+  {
+    "jobId": "90000002",
+    "title": "Senior Software Engineer - Platform",
+    "employerName": "Maplewood Analytics Inc.",
+    "city": "Ottawa",
+    "province": "ON",
+    "workplace": "Hybrid",
+    "employmentType": "Permanent, full time",
+    "salaryText": "$120,000 to $145,000 annually",
+    "datePosted": "2026-09-13",
+    "description": "We build forecasting tools for Canadian grocers. TypeScript & Go. PostgreSQL. The salary range for this role is $120,000 - $145,000 CAD per year. This posting is for an existing vacancy."
+  },
+  {
+    "jobId": "90000003",
+    "title": "Cook",
+    "employerName": "Harbourfront Diner (fixture)",
+    "city": "Halifax",
+    "province": "NS",
+    "employmentType": "Part time",
+    "salaryText": "$17.50 hourly",
+    "datePosted": "2026-09-20",
+    "description": "Prepare breakfast and lunch service."
+  }
+]

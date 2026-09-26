@@ -5,7 +5,7 @@
 A job-seeker tool for Canada. Paste any job link or recruiter message and get a **Job Passport** showing where the job really came from, whether it's still listed, and what the salary evidence says. Every claim links to its evidence.
 
 ## Status
-Phase 2 (foundation) is waiting on Checkpoint 2.
+Phase 3 (evidence engine) is waiting on Checkpoint 3.
 
 ## Run locally
 ```bash
@@ -26,6 +26,9 @@ npm test
 src/db/            Drizzle schema + client (migrations in drizzle/)
 src/sources/       JobSource interface, demo + Greenhouse connectors, registry
 src/pipeline/      run.ts (orchestrator, logging, retries), stages/*, worker.ts (pg-boss)
+src/verification/  rule-based signal engine — pure, structurally isolated from billing (see docs/04)
+src/evidence/       salary/vacancy extraction, dedupe similarity, freshness, verify-job (DB bridge)
+src/enrichment/     the one place AI is allowed (off by default; see docs/01 §"Where AI is allowed")
 src/lib/           polite HTTP (robots.txt, rate limits), text utils, logging
 src/app/           Next.js App Router (admin/jobs for now)
 test/              Vitest unit + DB integration tests, fixtures
@@ -35,3 +38,9 @@ test/              Vitest unit + DB integration tests, fixtures
 - [PRD](docs/01-prd.md) · [User stories](docs/02-user-stories.md) · [Data model](docs/03-data-model.md)
 - [Verification rule table](docs/04-verification-rules.md) · [Open questions and risks](docs/05-open-questions-and-risks.md)
 - [Sources: terms and status](docs/sources.md)
+
+## Admin (dev-only, no auth yet)
+`/admin/jobs` (list) → `/admin/jobs/[id]` (full Job Passport: signals, evidence, sources, status
+history) · `/admin/review` (duplicate clusters + reports awaiting a human) · `/admin/sources`
+(source health, dead-lettered errors) · `/docs/verification` (public "How verification works",
+generated from the same rule catalog the code runs).

@@ -1,11 +1,14 @@
 import { createHash } from "node:crypto";
 import { and, eq, sql } from "drizzle-orm";
 import type { DB } from "@/db/client";
-import { ingestionError, ingestionRun, rawPosting, source } from "@/db/schema";
+import { canonicalJob, ingestionError, ingestionRun, rawPosting, source } from "@/db/schema";
+import { recheckMissing, rollupFreshness } from "@/evidence/freshness";
+import { knownDomains, verifyJob } from "@/evidence/verify-job";
 import type { JobSource, RawPosting, SourceDescriptor } from "@/sources/types";
 import { deduplicate } from "./stages/deduplicate";
+import { extractEvidence } from "./stages/extract";
 import { normalize } from "./stages/normalize";
-import { resolveEmployer } from "./stages/resolve-employer";
+import { resolveEmployer, resolveSourceEmployer } from "./stages/resolve-employer";
 import { upsertJob } from "./stages/upsert";
 import { validate } from "./stages/validate";
 
@@ -69,6 +72,7 @@ export async function ensureSource(db: DB, d: SourceDescriptor): Promise<string>
     allowedUse: d.allowedUse,
     rateLimitPerMin: d.rateLimitPerMin,
     isDemo: d.isDemo,
+    employerOwned: d.employerOwned,
   };
   const [row] = await db
     .insert(source)
@@ -83,8 +87,12 @@ function hashPayload(payload: unknown): string {
 }
 
 /**
- * Fetch → Parse → Normalize → Validate → Resolve employer → Deduplicate →
- * Extract salary → Verify → Upsert → Index, for every posting from one source.
+ * Fetch → Parse → Normalize → Validate → Resolve employer → Extract salary →
+ * Deduplicate → Upsert → Index, for every posting from one source; then
+ * freshness rollup and Verify for every job the run touched.
+ *
+ * (Salary is extracted before dedupe because salary overlap is a dedupe
+ * feature; Verify runs last because it needs the merged, persisted job.)
  */
 export async function runSource(db: DB, src: JobSource, opts: RunOptions = {}): Promise<RunResult> {
   const now = opts.now ?? (() => new Date());
@@ -141,6 +149,15 @@ export async function runSource(db: DB, src: JobSource, opts: RunOptions = {}): 
   }
   counts.fetched = postings.length;
 
+  // ── RESOLVE_EMPLOYER (source level): identity from the careers-page probe ─
+  let sourceEmployer: Awaited<ReturnType<typeof resolveSourceEmployer>> = null;
+  try {
+    sourceEmployer = await resolveSourceEmployer(db, src, sourceId, now());
+  } catch (e) {
+    await recordError("RESOLVE_EMPLOYER", (e as Error).message, null, 0, false);
+  }
+  const touched = new Set<string>();
+
   // ── Per-posting stages ──────────────────────────────────────────────────
   for (const raw of postings) {
     const contentHash = hashPayload(raw.payload);
@@ -167,7 +184,11 @@ export async function runSource(db: DB, src: JobSource, opts: RunOptions = {}): 
       try {
         const outcome = await processPosting(db, src, sourceId, rawPostingId, raw, now());
         if (outcome === "skipped") counts.skipped++;
-        else counts.upserted++;
+        else {
+          counts.upserted++;
+          touched.add(outcome.jobId);
+          for (const id of outcome.relatedJobIds) touched.add(id);
+        }
         break;
       } catch (e) {
         const err = e instanceof StageError ? e : new StageError("UPSERT", e);
@@ -180,6 +201,33 @@ export async function runSource(db: DB, src: JobSource, opts: RunOptions = {}): 
         }
         await sleep(backoff(attempt + 1));
       }
+    }
+  }
+
+  // ── Freshness: employer boards list every open job, so check what vanished ─
+  if (d.employerOwned) {
+    try {
+      for (const id of await recheckMissing(db, src, sourceId, postings.map((p) => p.externalRef))) touched.add(id);
+    } catch (e) {
+      await recordError("VERIFY", `freshness recheck failed: ${(e as Error).message}`, null, 0, false);
+    }
+  }
+  // Identity changes affect every job of this employer.
+  if (sourceEmployer?.identityChanged) {
+    const jobs = await db.select({ id: canonicalJob.id }).from(canonicalJob).where(eq(canonicalJob.employerId, sourceEmployer.employerId));
+    for (const j of jobs) touched.add(j.id);
+  }
+
+  // ── VERIFY every touched job ─────────────────────────────────────────────
+  const ids = [...touched];
+  await rollupFreshness(db, ids);
+  const domains = await knownDomains(db);
+  for (const id of ids) {
+    try {
+      await verifyJob(db, id, now(), domains);
+    } catch (e) {
+      await recordError("VERIFY", (e as Error).message, id, 0, false);
+      log("verify failed", { job: id });
     }
   }
 
@@ -202,7 +250,8 @@ async function processPosting(
   rawPostingId: string,
   raw: RawPosting,
   now: Date,
-): Promise<"upserted" | "skipped"> {
+): Promise<{ jobId: string; relatedJobIds: string[] } | "skipped"> {
+  const d = src.descriptor;
   const parsed = await stage("PARSE", () => src.parse(raw));
   const normalized = await stage("NORMALIZE", () => normalize(parsed));
   const v = await stage("VALIDATE", () => validate(normalized));
@@ -210,22 +259,36 @@ async function processPosting(
     if (v.skip) return "skipped";
     throw new StageError("VALIDATE", new PermanentError(v.reason));
   }
-  const employerId = await stage("RESOLVE_EMPLOYER", () => resolveEmployer(db, src.descriptor, v.posting));
-  const dedupe = await stage("DEDUPLICATE", () => deduplicate(db, sourceId, v.posting.externalRef));
-  // EXTRACT_SALARY and VERIFY are Phase 3 stages; they slot in here.
-  await stage("UPSERT", () =>
+  const employerId = await stage("RESOLVE_EMPLOYER", () => resolveEmployer(db, d, v.posting));
+  const evidence = await stage("EXTRACT_SALARY", () => extractEvidence(parsed, v.posting));
+  const decision = await stage("DEDUPLICATE", () =>
+    deduplicate(db, {
+      sourceId,
+      employerOwned: d.employerOwned,
+      employerId,
+      posting: v.posting,
+      salary: evidence.salary,
+      skills: evidence.skills,
+    }),
+  );
+  const jobId = await stage("UPSERT", () =>
     upsertJob(db, {
       sourceId,
+      employerOwned: d.employerOwned,
       rawPostingId,
       employerId,
-      canonicalJobId: dedupe.canonicalJobId,
+      decision,
       posting: v.posting,
-      isDemo: src.descriptor.isDemo,
+      evidence,
+      isDemo: d.isDemo,
       now,
     }),
   );
   // INDEX: canonical_job.search_tsv is maintained by a trigger (drizzle/0002_search_tsv.sql).
-  return "upserted";
+  // A REVIEW/MERGE decision can change an *existing* job's duplicate-cluster
+  // membership too (via upsertJob) — that job needs re-verifying alongside this one.
+  const relatedJobIds = decision.kind === "REVIEW" ? [decision.reviewWith] : decision.kind === "MERGE" ? [decision.canonicalJobId] : [];
+  return { jobId, relatedJobIds };
 }
 
 /** Postings that exhausted their retries and wait for an admin. */

@@ -100,6 +100,9 @@ export const source = pgTable(
     provider: text("provider").notNull(), // greenhouse | lever | ashby | jobbank | demo
     name: text("name").notNull(),
     boardToken: text("board_token"),
+    // True when the source is the employer's own board/careers page (not an aggregator).
+    employerOwned: boolean("employer_owned").notNull().default(false),
+    employerId: uuid("employer_id"), // set for employer-owned sources once resolved
     termsReference: text("terms_reference").notNull(), // WHY we may use it
     allowedUse: text("allowed_use").notNull(),
     rateLimitPerMin: integer("rate_limit_per_min").notNull().default(30),
@@ -177,6 +180,7 @@ export const employer = pgTable(
     primaryDomain: text("primary_domain"),
     identityStatus: identityStatus("identity_status").notNull().default("UNKNOWN"),
     identityEvidence: jsonb("identity_evidence").$type<IdentityEvidence[]>().notNull().default([]),
+    identityCheckedAt: ts("identity_checked_at"),
     registryRef: text("registry_ref"), // P1 — business registry; never faked
     locations: text("locations").array().notNull().default(sql`'{}'::text[]`),
     isDemo: isDemo(),
@@ -254,6 +258,14 @@ export const canonicalJob = pgTable(
     skills: text("skills").array().notNull().default(sql`'{}'::text[]`),
     applyUrl: text("apply_url").notNull(),
     vacancyStatement: text("vacancy_statement"),
+    vacancyStatementDerived: boolean("vacancy_statement_derived").notNull().default(false),
+    statusRule: text("status_rule"), // id of the rule (R0..R7) that produced `status`
+    verifiedAt: ts("verified_at"), // when the verification engine last ran
+    // Admin override (R0). Always audited and shown in the Passport.
+    overrideStatus: jobStatus("override_status"),
+    overrideNote: text("override_note"),
+    overrideBy: uuid("override_by"),
+    overrideAt: ts("override_at"),
     status: jobStatus("status").notNull().default("UNVERIFIED"),
     postedAt: ts("posted_at"),
     firstSeenAt: ts("first_seen_at").notNull().defaultNow(),

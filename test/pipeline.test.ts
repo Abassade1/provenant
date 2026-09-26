@@ -2,11 +2,12 @@ import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import type { PgTable } from "drizzle-orm/pg-core";
 import { eq, sql } from "drizzle-orm";
 import { closeDb, getDb } from "@/db/client";
-import { canonicalJob, employer, ingestionError, ingestionRun, jobSourceRecord, rawPosting } from "@/db/schema";
+import { canonicalJob, employer, ingestionError, ingestionRun, jobSourceRecord, rawPosting, source } from "@/db/schema";
 import { clearRobotsCache } from "@/lib/http";
 import { ingestAll } from "@/pipeline/ingest-all";
 import { MAX_RETRIES, runSource } from "@/pipeline/run";
 import { createDemoSources } from "@/sources/demo";
+import { buildDemoJobs } from "@/sources/demo/data";
 import type { JobSource } from "@/sources/types";
 import { resetDb } from "./db";
 import { fakeGreenhouse, makeSource } from "./greenhouse-fake";
@@ -22,25 +23,32 @@ beforeEach(async () => {
 afterAll(async () => closeDb());
 
 describe("pipeline: demo connector", () => {
-  it("ingests every demo job as a flagged demo record", async () => {
+  const liveDemoJobs = buildDemoJobs().filter((j) => j.postedDaysAgo <= 25).length;
+
+  it("ingests every live demo job, all flagged as demo on .example domains", async () => {
     const results = await ingestAll(getDb(), createDemoSources(), opts);
     expect(results.every((r) => r.status === "SUCCEEDED")).toBe(true);
-    expect(await count(canonicalJob)).toBe(60);
-    const nonDemo = await getDb().select().from(canonicalJob).where(eq(canonicalJob.isDemo, false));
-    expect(nonDemo).toHaveLength(0);
+    const onBoards = await getDb()
+      .select({ n: sql<number>`count(distinct ${jobSourceRecord.canonicalJobId})::int` })
+      .from(jobSourceRecord)
+      .innerJoin(source, eq(source.id, jobSourceRecord.sourceId))
+      .where(eq(source.employerOwned, true));
+    expect(onBoards[0]!.n).toBe(liveDemoJobs);
+    expect(await getDb().select().from(canonicalJob).where(eq(canonicalJob.isDemo, false))).toHaveLength(0);
     const emps = await getDb().select().from(employer);
-    expect(emps.every((e) => e.isDemo && e.primaryDomain!.endsWith(".example"))).toBe(true);
+    expect(emps.every((e) => e.isDemo && (!e.primaryDomain || e.primaryDomain.endsWith(".example")))).toBe(true);
   });
 
   it("is idempotent across runs", async () => {
     await ingestAll(getDb(), createDemoSources(), opts);
-    const before = await getDb().select({ id: canonicalJob.id, firstSeenAt: canonicalJob.firstSeenAt }).from(canonicalJob);
+    const snapshot = async () => ({
+      jobs: (await getDb().select({ id: canonicalJob.id, status: canonicalJob.status }).from(canonicalJob)).sort((a, b) => a.id.localeCompare(b.id)),
+      records: await count(jobSourceRecord),
+      raws: await count(rawPosting),
+    });
+    const before = await snapshot();
     await ingestAll(getDb(), createDemoSources(), opts);
-    expect(await count(canonicalJob)).toBe(60);
-    expect(await count(jobSourceRecord)).toBe(60);
-    expect(await count(rawPosting)).toBe(60);
-    const after = await getDb().select({ id: canonicalJob.id, firstSeenAt: canonicalJob.firstSeenAt }).from(canonicalJob);
-    expect(new Set(after.map((a) => a.id))).toEqual(new Set(before.map((b) => b.id)));
+    expect(await snapshot()).toEqual(before);
   });
 });
 
@@ -54,7 +62,8 @@ describe("pipeline: Greenhouse connector", () => {
       ["Customer Success Manager", null, null, "REMOTE", "UNKNOWN"],
       ["Sr. Software Engineer, Platform (Hybrid)", "Toronto", "ON", "HYBRID", "FULL_TIME"],
     ]);
-    expect(jobs.every((j) => !j.isDemo && j.status === "UNVERIFIED")).toBe(true);
+    // On the employer's board and just confirmed, but no careers-page link configured → identity PROBABLE.
+    expect(jobs.every((j) => !j.isDemo && j.status === "PARTIALLY_VERIFIED")).toBe(true);
 
     const errors = await getDb().select().from(ingestionError);
     expect(errors).toHaveLength(1);
@@ -93,7 +102,7 @@ describe("pipeline: Greenhouse connector", () => {
   });
 
   it("retries transient per-posting failures, then dead-letters", async () => {
-    const [demo] = createDemoSources();
+    const demo = createDemoSources()[0];
     let calls = 0;
     const flaky: JobSource = {
       descriptor: demo!.descriptor,

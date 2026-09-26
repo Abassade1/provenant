@@ -128,6 +128,7 @@ export interface PoliteFetchOptions {
   perMinute: number;
   timeoutMs?: number;
   fetchImpl?: FetchLike;
+  accept?: string;
 }
 
 export async function politeFetch(url: string, opts: PoliteFetchOptions): Promise<Response> {
@@ -137,7 +138,7 @@ export async function politeFetch(url: string, opts: PoliteFetchOptions): Promis
   if (!isAllowed(rules, u.pathname + u.search)) throw new RobotsDisallowedError(url);
   await rateLimit(opts.rateKey, opts.perMinute);
   return doFetch(url, {
-    headers: { "user-agent": userAgent(), accept: "application/json" },
+    headers: { "user-agent": userAgent(), accept: opts.accept ?? "application/json" },
     signal: AbortSignal.timeout(opts.timeoutMs ?? 15_000),
   });
 }
