@@ -5,7 +5,8 @@
 A job-seeker tool for Canada. Paste any job link or recruiter message and get a **Job Passport** showing where the job really came from, whether it's still listed, and what the salary evidence says. Every claim links to its evidence.
 
 ## Status
-Phase 5 (admin + hardening) is waiting on Checkpoint 5.
+All six phases complete. See [`docs/06-handoff.md`](docs/06-handoff.md) for the full hand-off:
+what's real vs. stubbed, what verification can't prove, and the recommended next phase.
 
 ## Run locally
 ```bash
@@ -44,7 +45,7 @@ test/              Vitest unit + DB integration tests, fixtures
 ## Docs
 - [PRD](docs/01-prd.md) · [User stories](docs/02-user-stories.md) · [Data model](docs/03-data-model.md)
 - [Verification rule table](docs/04-verification-rules.md) · [Open questions and risks](docs/05-open-questions-and-risks.md)
-- [Sources: terms and status](docs/sources.md)
+- [Sources: terms and status](docs/sources.md) · [Final hand-off](docs/06-handoff.md)
 
 ## User-facing pages
 - `/` landing · `/check` Check a Job (URL or pasted text → Job Passport) · `/search` + `/jobs/[id]`
