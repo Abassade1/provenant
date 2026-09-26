@@ -1,35 +1,68 @@
 @import "tailwindcss";
+@import "../styles/tokens.css";
 
-:root {
-  --bg: #fbfaf7;
-  --fg: #1a1a18;
-  --muted: #5c5b55;
-  --line: #e4e1d8;
-  --accent: #1f5f4a;
-  --warn-bg: #fff4d6;
-  --warn-fg: #5a4300;
-}
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #141412;
-    --fg: #eeede8;
-    --muted: #a9a79e;
-    --line: #2e2d29;
-    --accent: #7cc4a8;
-    --warn-bg: #3a2f0c;
-    --warn-fg: #f5dc93;
-  }
-}
 @theme inline {
   --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-text: var(--text);
+  --color-text-muted: var(--text-muted);
+  --color-border: var(--border);
+
+  --color-primary: var(--primary);
+  --color-primary-contrast: var(--primary-contrast);
+  --color-accent: var(--accent);
+  --color-accent-contrast: var(--accent-contrast);
+
+  --color-success: var(--success);
+  --color-success-bg: var(--success-bg);
+  --color-warning: var(--warning);
+  --color-warning-bg: var(--warning-bg);
+  --color-danger: var(--danger);
+  --color-danger-bg: var(--danger-bg);
+  --color-info: var(--info);
+  --color-info-bg: var(--info-bg);
+
+  /* Legacy aliases — kept so unmigrated components keep rendering */
   --color-fg: var(--fg);
   --color-muted: var(--muted);
   --color-line: var(--line);
-  --color-accent: var(--accent);
   --color-warn-bg: var(--warn-bg);
   --color-warn-fg: var(--warn-fg);
+
+  --font-sans: var(--font-body);
+  --font-display: var(--font-display);
+
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-lg: var(--radius-lg);
+
+  --shadow-1: var(--shadow-1);
+  --shadow-2: var(--shadow-2);
+  --shadow-3: var(--shadow-3);
 }
+
 body {
   background: var(--bg);
-  color: var(--fg);
+  color: var(--text);
+  font-family: var(--font-body);
+}
+
+h1, h2, h3, h4 {
+  font-family: var(--font-display);
+}
+
+@keyframes marquee-scroll {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+.marquee-track {
+  animation: marquee-scroll var(--duration-marquee) linear infinite;
+}
+.marquee-track[data-direction="reverse"] {
+  animation-direction: reverse;
+}
+.marquee-row:hover .marquee-track {
+  animation-play-state: paused;
 }

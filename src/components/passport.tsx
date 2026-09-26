@@ -1,3 +1,5 @@
+import { CheckCircle2 } from "lucide-react";
+import { StatusChip, SalaryEvidenceTag } from "./ui/chip";
 import { SignalsDetails } from "./signals-details";
 import { SIGNALS, STATUS_LABELS } from "@/verification";
 import type { JobStatus, Signal } from "@/verification";
@@ -13,33 +15,13 @@ const relativeDays = (d: Date | null) => {
   return `${days} days ago`;
 };
 
-// Icon + text label per status — never colour alone (brief §11, §16).
-const STATUS_ICON: Record<JobStatus, string> = {
-  VERIFIED: "✓",
-  PARTIALLY_VERIFIED: "◐",
-  UNVERIFIED: "?",
-  STALE: "⏱",
-  EXPIRED: "✕",
-  REVIEW_REQUIRED: "⚠",
-  HIGH_RISK: "⚠",
-};
-const STATUS_TONE: Record<JobStatus, string> = {
-  VERIFIED: "text-[var(--accent)]",
-  PARTIALLY_VERIFIED: "text-[var(--fg)]",
-  UNVERIFIED: "text-muted",
-  STALE: "text-muted",
-  EXPIRED: "text-muted",
-  REVIEW_REQUIRED: "text-[var(--warn-fg)]",
-  HIGH_RISK: "text-red-700 dark:text-red-400",
-};
-
 export interface PassportSalary {
   id: string;
   min: number | null;
   max: number | null;
   period: string | null;
   /**
-   * Where this figure comes from, in the words shown next to it:
+   * Where this figure comes from, shown as a distinct tag next to it:
    *   "employer"  — parsed from the employer's own posting
    *   "extracted" — parsed by an automated fallback from the employer's own posting
    *   "pasted"    — only from text the user pasted into Check a Job; not confirmed
@@ -80,19 +62,16 @@ function money(n: number) {
   return n % 1 === 0 ? `$${n.toLocaleString("en-CA")}` : `$${n.toFixed(2)}`;
 }
 
-const SALARY_LABEL: Record<PassportSalary["provenance"], string> = {
-  employer: "employer advertised",
-  extracted: "extracted automatically",
-  pasted: "from the text you pasted — not confirmed by the employer",
-};
-
 function SalaryLine({ s }: { s: PassportSalary }) {
   const range = s.min && s.max && s.min !== s.max ? `${money(s.min)}–${money(s.max)}` : money(s.max ?? s.min ?? 0);
   const per = s.period ? ` / ${s.period.toLowerCase()}` : "";
   return (
-    <div>
-      {range}
-      {per} — {SALARY_LABEL[s.provenance]}
+    <div className="flex flex-wrap items-center gap-2 tabular-nums">
+      <span>
+        {range}
+        {per}
+      </span>
+      <SalaryEvidenceTag kind={s.provenance} />
     </div>
   );
 }
@@ -112,21 +91,17 @@ export function Passport(props: PassportProps) {
   const demoSuffix = isDemo ? " (demo)" : "";
 
   return (
-    <section className="rounded-lg border border-line bg-[var(--bg)] p-5" aria-label="Job Passport">
+    <section className="rounded-[var(--radius-md)] border border-line bg-[var(--surface)] p-5 shadow-[var(--shadow-1)]" aria-label="Job Passport">
       <h2 className="font-mono text-xs uppercase tracking-wide text-muted">Job Passport</h2>
-      <h2 className="mt-1 text-lg font-semibold">
+      <h2 className="mt-1 font-display text-lg font-semibold text-fg">
         {title} · {employerName}
         {demoSuffix}
       </h2>
 
       <dl className="mt-4 grid grid-cols-[9rem_1fr] gap-y-3 text-sm">
         <dt className="text-muted">Status</dt>
-        <dd className={`flex items-center gap-2 font-medium ${STATUS_TONE[status]}`}>
-          <span aria-hidden>{STATUS_ICON[status]}</span>
-          <span>
-            {STATUS_LABELS[status]}
-            {demoSuffix}
-          </span>
+        <dd>
+          <StatusChip status={status} demo={isDemo} />
         </dd>
 
         {overrideNote != null && (
@@ -141,7 +116,10 @@ export function Passport(props: PassportProps) {
         <dt className="text-muted">Employer</dt>
         <dd>
           {identityStatus === "CONFIRMED" ? (
-            <>✓ Identity confirmed{employerDomain ? ` (${employerDomain})` : ""}</>
+            <span className="inline-flex items-center gap-1.5">
+              <CheckCircle2 className="size-4 text-success" aria-hidden />
+              Identity confirmed{employerDomain ? ` (${employerDomain})` : ""}
+            </span>
           ) : identityStatus === "PROBABLE" ? (
             <>We list this employer's own board, but haven't confirmed it's theirs.</>
           ) : (
@@ -150,7 +128,7 @@ export function Passport(props: PassportProps) {
         </dd>
 
         <dt className="text-muted">Salary</dt>
-        <dd>
+        <dd className="flex flex-col gap-1.5">
           {salaries.length === 0 ? "Salary not disclosed." : salaries.map((s) => <SalaryLine key={s.id} s={s} />)}
         </dd>
 
@@ -164,12 +142,12 @@ export function Passport(props: PassportProps) {
         )}
 
         <dt className="text-muted">Posted</dt>
-        <dd>{fmt(postedAt)}</dd>
+        <dd className="tabular-nums">{fmt(postedAt)}</dd>
 
         <dt className="text-muted">Last confirmed</dt>
-        <dd>
+        <dd className="tabular-nums">
           {fmt(lastVerifiedAt)}
-          {staleWarning && <span className="text-[var(--warn-fg)]"> — may be closed</span>}
+          {staleWarning && <span className="text-warn-fg"> — may be closed</span>}
         </dd>
 
         <dt className="text-muted">Also found on</dt>
@@ -209,7 +187,7 @@ export function Passport(props: PassportProps) {
           {signals.map((s, i) => {
             const def = SIGNALS[s.code];
             return (
-              <li key={i} className="rounded border border-line p-3 text-sm">
+              <li key={i} className="rounded-[var(--radius-sm)] border border-line p-3 text-sm">
                 <div className="flex items-center gap-2">
                   <span aria-hidden>{s.polarity === "POSITIVE" ? "✓" : s.polarity === "NEGATIVE" ? "✕" : "•"}</span>
                   <strong>{def?.label ?? s.code}</strong>

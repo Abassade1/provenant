@@ -1,0 +1,152 @@
+/**
+ * Provenant design tokens — Palette A "Ink & Amber" (Checkpoint 1, approved).
+ * Every text/background pairing here is WCAG AA-verified (computed, not
+ * eyeballed) — see docs/07-design-system.md for the contrast table.
+ *
+ * Legacy aliases (--fg, --muted, --line, --warn-bg, --warn-fg) point at the
+ * new tokens so existing components keep rendering unchanged until each page
+ * is migrated in Checkpoints 3–5. Don't add new legacy references — use the
+ * semantic names on the left.
+ */
+
+:root {
+  /* ---- Colour: surfaces & text ---- */
+  --bg: #faf8f4;
+  --surface: #ffffff;
+  --surface-raised: #f3f1ea;
+  --text: #14203a;
+  --text-muted: #5b6b85;
+  --border: #e4e1d8;
+
+  /* ---- Colour: brand ---- */
+  --primary: #14203a;
+  --primary-contrast: #ffffff;
+  --accent: #c17f17;
+  --accent-contrast: #14203a; /* white on this amber is only 3.33:1 — use ink text */
+
+  /* ---- Colour: status ---- */
+  --success: #2f6b4f;
+  --success-bg: #eaf3ec;
+  --warning: #7a4a0a;
+  --warning-bg: #fff4d6;
+  --danger: #b42318;
+  --danger-bg: #fbeae8;
+  --info: #2b5fa0;
+  --info-bg: #e9f0fa;
+
+  /* ---- Legacy aliases (pre-redesign token names) ---- */
+  --fg: var(--text);
+  --muted: var(--text-muted);
+  --line: var(--border);
+  --warn-bg: var(--warning-bg);
+  --warn-fg: var(--warning);
+
+  /* ---- Type ---- */
+  --font-display: var(--font-fraunces), Georgia, serif;
+  --font-body: var(--font-inter), system-ui, sans-serif;
+  /* Fluid scale: clamp(min, preferred, max) — see docs/07-design-system.md */
+  --text-display: clamp(2.5rem, 2rem + 2.2vw, 4rem);
+  --text-h1: clamp(2rem, 1.6rem + 1.8vw, 3rem);
+  --text-h2: clamp(1.5rem, 1.3rem + 0.9vw, 2rem);
+  --text-h3: clamp(1.25rem, 1.15rem + 0.4vw, 1.5rem);
+  --text-h4: clamp(1.0625rem, 1rem + 0.25vw, 1.25rem);
+  --text-body-lg: clamp(1.0625rem, 1rem + 0.2vw, 1.1875rem);
+  --text-body: 1rem;
+  --text-small: 0.875rem;
+  --text-caption: 0.75rem;
+
+  /* ---- Spacing (4px base) ---- */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+  --section-py: clamp(4rem, 3rem + 4vw, 8rem); /* 64px mobile → 128px desktop */
+  --content-max-width: 1200px;
+
+  /* ---- Radius ---- */
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 24px;
+  --radius-full: 9999px;
+
+  /* ---- Elevation (soft — prefer borders/tint over heavy shadows) ---- */
+  --shadow-1: 0 1px 2px rgba(20, 32, 58, 0.06);
+  --shadow-2: 0 4px 12px rgba(20, 32, 58, 0.08);
+  --shadow-3: 0 12px 32px rgba(20, 32, 58, 0.12);
+
+  /* ---- Motion ---- */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --duration-fast: 150ms;
+  --duration-base: 200ms;
+  --duration-slow: 250ms;
+  --duration-marquee: 40s;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0b1220;
+    --surface: #121b2e;
+    --surface-raised: #1a2540;
+    --text: #e8ecf3;
+    --text-muted: #9aa7bc;
+    --border: #263352;
+
+    --primary: #8fa8d6;
+    --primary-contrast: #0b1220;
+    --accent: #e3a23b;
+    --accent-contrast: #0b1220;
+
+    --success: #6fbe97;
+    --success-bg: #12291f;
+    --warning: #e0a23c;
+    --warning-bg: #3a2f0c;
+    --danger: #e5675f;
+    --danger-bg: #3a1614;
+    --info: #6fa3e0;
+    --info-bg: #142943;
+
+    --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.3);
+    --shadow-2: 0 4px 12px rgba(0, 0, 0, 0.35);
+    --shadow-3: 0 12px 32px rgba(0, 0, 0, 0.45);
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg: #0b1220;
+  --surface: #121b2e;
+  --surface-raised: #1a2540;
+  --text: #e8ecf3;
+  --text-muted: #9aa7bc;
+  --border: #263352;
+
+  --primary: #8fa8d6;
+  --primary-contrast: #0b1220;
+  --accent: #e3a23b;
+  --accent-contrast: #0b1220;
+
+  --success: #6fbe97;
+  --success-bg: #12291f;
+  --warning: #e0a23c;
+  --warning-bg: #3a2f0c;
+  --danger: #e5675f;
+  --danger-bg: #3a1614;
+  --info: #6fa3e0;
+  --info-bg: #142943;
+
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-2: 0 4px 12px rgba(0, 0, 0, 0.35);
+  --shadow-3: 0 12px 32px rgba(0, 0, 0, 0.45);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

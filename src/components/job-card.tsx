@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { SaveButton } from "@/components/save-button";
-import { STATUS_LABELS, type JobStatus } from "@/verification";
+import { StatusChip } from "@/components/ui/chip";
+import type { JobStatus } from "@/verification";
 import type { SearchResultRow } from "@/evidence/search";
 
 const fmtDate = (d: Date | null) => (d ? d.toLocaleDateString("en-CA", { dateStyle: "medium", timeZone: "America/Toronto" }) : "—");
@@ -8,10 +9,6 @@ const relDays = (d: Date | null) => {
   if (!d) return null;
   const days = Math.floor((Date.now() - d.getTime()) / 86_400_000);
   return days <= 0 ? "today" : days === 1 ? "1 day ago" : `${days} days ago`;
-};
-
-const STATUS_ICON: Record<JobStatus, string> = {
-  VERIFIED: "✓", PARTIALLY_VERIFIED: "◐", UNVERIFIED: "?", STALE: "⏱", EXPIRED: "✕", REVIEW_REQUIRED: "⚠", HIGH_RISK: "⚠",
 };
 
 function money(n: number) {
@@ -25,10 +22,10 @@ export function JobCard({ job, saved, signedIn }: { job: SearchResultRow; saved:
       : "Salary not disclosed";
 
   return (
-    <li className="rounded-lg border border-line p-4">
+    <li className="rounded-[var(--radius-md)] border border-line bg-[var(--surface)] p-4 shadow-[var(--shadow-1)]">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <Link href={`/jobs/${job.id}`} className="text-base font-medium text-accent underline">
+          <Link href={`/jobs/${job.id}`} className="font-display text-base font-medium text-accent underline">
             {job.title}
           </Link>
           <p className="text-sm">
@@ -41,13 +38,12 @@ export function JobCard({ job, saved, signedIn }: { job: SearchResultRow; saved:
         <SaveButton jobId={job.id} initialSaved={saved} signedIn={signedIn} />
       </div>
 
-      <dl className="mt-3 flex flex-wrap gap-x-6 gap-y-1 text-sm text-muted">
-        <div>{salary}</div>
-        <div>Posted {fmtDate(job.postedAt ?? job.firstSeenAt)}</div>
-        <div>Last confirmed {relDays(job.lastVerifiedAt) ?? "never"}</div>
+      <dl className="mt-3 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-muted">
+        <div className="tabular-nums">{salary}</div>
+        <div className="tabular-nums">Posted {fmtDate(job.postedAt ?? job.firstSeenAt)}</div>
+        <div className="tabular-nums">Last confirmed {relDays(job.lastVerifiedAt) ?? "never"}</div>
         <div>
-          <span aria-hidden>{STATUS_ICON[job.status as JobStatus]}</span> {STATUS_LABELS[job.status as JobStatus]}
-          {job.isDemo && " (demo)"}
+          <StatusChip status={job.status as JobStatus} demo={job.isDemo} />
         </div>
         <div>Found on {job.sourceCount} source{job.sourceCount === 1 ? "" : "s"}</div>
       </dl>
