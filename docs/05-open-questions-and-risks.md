@@ -60,3 +60,44 @@
   UI/large text ≥ 7:1 in both themes); added a skip-to-content link, labelled the two previously
   placeholder-only Check a Job inputs and the report textarea, and promoted the Job Passport's
   section title to a real heading so it appears in heading-based navigation.
+
+## Phase 6: critical review (walked the product as a skeptical job seeker)
+Found and fixed several places the UI claimed more than the evidence backed, and two
+promised features with no backend behind them at all:
+- **Salary provenance mislabeled.** Check-a-Job's Passport showed a salary as
+  employer-confirmed (`derived: boolean` only distinguished "employer" vs "estimated") even
+  when it came from AI extraction or straight from the pasted text with no match at all.
+  `PassportSalary` now carries `provenance: "employer" | "extracted" | "pasted"` and the
+  Passport renders the honest label for each, including "from the text you pasted — not
+  confirmed by the employer" for the pasted case.
+- **"Also found on" conflated 0 and 1 sources.** The Passport's source count line read the
+  same whether we'd matched nothing or matched exactly one source. Now distinguishes "we
+  haven't matched this to anything in our index" from "this is the only source we found"
+  from "N sources."
+- **Check-a-Job discarded real evidence on a strong match.** Even when a pasted job matched
+  an indexed posting closely enough to be treated as the same job, the Passport showed no
+  sources and no salary — `findMatchingJob` computed the match but the UI never surfaced its
+  `displaySources`/`displaySalaries`. Fixed by threading them through `CheckOutcome` and
+  rendering them whenever `isStrongMatch` is true.
+- **Retention promise had no purge job.** The landing page has always promised checks are
+  "deleted after a limited retention period," but nothing ever deleted a `jobCheck` row.
+  Added `purgeExpiredChecks` (`src/checker/purge.ts`), a worker schedule (`PURGE_CRON`,
+  default daily at 4am), and a standalone `npm run purge-checks` script.
+- **Saved-search alerts were pure UI, no backend.** "You'll get an alert when new matches
+  appear" has been in the copy since Phase 4 with nothing behind it — confirmed via a full
+  grep for `lastNotifiedAt`/`notification` outside the schema. Built the whole feature:
+  `generateSavedSearchAlerts` (`src/evidence/alerts.ts`) diffs each saved search against jobs
+  first seen since its last check (or its creation, on the first run) and writes a
+  notification per match; a worker schedule (`ALERTS_CRON`, default hourly) and a manual
+  `npm run generate-alerts` script drive it; a `/notifications` page, header unread-count
+  badge, and mark-read/mark-all-read actions give users somewhere to actually see the result
+  — there was previously no UI for notifications at all, so `job_saved`-adjacent alerts were
+  invisible even if they'd existed.
+- **`/saved` could crash on a stale saved search.** It parsed each saved search's stored
+  filters with `.parse` (throws on failure) while `alerts.ts` correctly used `.safeParse` for
+  the same data — a filters shape that no longer validates (schema changed, corrupted JSON)
+  would 500 the whole page instead of just that one row. Now uses `.safeParse` and shows
+  "filters no longer valid — delete and re-save" for the broken entry only.
+
+Verified after these fixes: full Vitest suite 192/192 passing (16 files, including new
+`test/purge.test.ts` and `test/alerts.test.ts`), `tsc --noEmit` clean, `next build` clean.
