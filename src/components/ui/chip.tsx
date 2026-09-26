@@ -50,9 +50,9 @@ export function StatusChip({ status, demo = false }: { status: JobStatus; demo?:
 }
 
 const SALARY_META: Record<"employer" | "extracted" | "pasted", { label: string; tone: string; bg: string; border: string }> = {
-  employer: { label: "Employer advertised", tone: "text-success", bg: "bg-success-bg", border: "border-transparent" },
-  extracted: { label: "Extracted automatically", tone: "text-fg", bg: "bg-surface-raised", border: "border-transparent" },
-  pasted: { label: "From pasted text — not confirmed", tone: "text-warn-fg", bg: "bg-[var(--surface)]", border: "border-dashed border-line" },
+  employer: { label: "employer advertised", tone: "text-success", bg: "bg-success-bg", border: "border-transparent" },
+  extracted: { label: "extracted automatically", tone: "text-fg", bg: "bg-surface-raised", border: "border-transparent" },
+  pasted: { label: "from the text you pasted — not confirmed by the employer", tone: "text-warn-fg", bg: "bg-[var(--surface)]", border: "border-dashed border-line" },
 };
 
 /**

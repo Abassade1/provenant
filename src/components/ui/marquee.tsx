@@ -10,7 +10,7 @@ export function Marquee({ items, direction = "forward", variant = "pill" }: { it
   const doubled = [...items, ...items];
   const itemCls =
     variant === "pill"
-      ? "rounded-[var(--radius-full)] border border-line bg-[var(--surface)] px-4 py-2 text-sm whitespace-nowrap"
+      ? "rounded-[var(--radius-full)] border border-line bg-[var(--surface)] px-4 py-2 text-sm text-fg whitespace-nowrap"
       : "text-sm font-medium uppercase tracking-wide text-muted whitespace-nowrap";
   return (
     <div className="marquee-row overflow-hidden" role="list" aria-label="Scrolling examples">
