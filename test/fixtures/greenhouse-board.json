@@ -1,0 +1,49 @@
+{
+  "jobs": [
+    {
+      "id": 4000001,
+      "title": "Sr. Software Engineer, Platform (Hybrid)",
+      "updated_at": "2026-09-20T14:02:11-04:00",
+      "first_published": "2026-09-12T09:00:00-04:00",
+      "absolute_url": "https://job-boards.greenhouse.io/maplewoodfixture/jobs/4000001",
+      "company_name": "Maplewood Analytics",
+      "location": { "name": "Toronto, Ontario, Canada" },
+      "metadata": [
+        { "id": 1, "name": "Employment Type", "value": "Full-time", "value_type": "single_select" },
+        { "id": 2, "name": "Workplace Type", "value": "Hybrid", "value_type": "single_select" }
+      ],
+      "content": "&lt;p&gt;We build forecasting tools for Canadian grocers.&lt;/p&gt;&lt;ul&gt;&lt;li&gt;TypeScript &amp;amp; Go&lt;/li&gt;&lt;li&gt;PostgreSQL&lt;/li&gt;&lt;/ul&gt;&lt;p&gt;The salary range for this role is $120,000 - $145,000 CAD per year.&lt;/p&gt;&lt;p&gt;This posting is for an existing vacancy.&lt;/p&gt;"
+    },
+    {
+      "id": 4000002,
+      "title": "Customer Success Manager",
+      "updated_at": "2026-09-22T10:00:00-04:00",
+      "first_published": "2026-09-22T10:00:00-04:00",
+      "absolute_url": "https://job-boards.greenhouse.io/maplewoodfixture/jobs/4000002",
+      "company_name": "Maplewood Analytics",
+      "location": { "name": "Remote - Canada" },
+      "metadata": [],
+      "content": "&lt;p&gt;Help grocers get value from our product.&lt;/p&gt;"
+    },
+    {
+      "id": 4000003,
+      "title": "Account Executive",
+      "updated_at": "2026-09-18T10:00:00-04:00",
+      "first_published": "2026-09-18T10:00:00-04:00",
+      "absolute_url": "https://job-boards.greenhouse.io/maplewoodfixture/jobs/4000003",
+      "company_name": "Maplewood Analytics",
+      "location": { "name": "Austin, TX" },
+      "metadata": null,
+      "content": "&lt;p&gt;US sales role.&lt;/p&gt;"
+    },
+    {
+      "id": 4000004,
+      "title": "",
+      "updated_at": "2026-09-18T10:00:00-04:00",
+      "absolute_url": "https://job-boards.greenhouse.io/maplewoodfixture/jobs/4000004",
+      "location": { "name": "Ottawa, ON" },
+      "content": ""
+    }
+  ],
+  "meta": { "total": 4 }
+}
