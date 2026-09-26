@@ -25,3 +25,10 @@
 | Pasted texts contain third-party PII | Encrypt at rest, no raw-text logging, TTL deletion |
 | Thin index (50 employers) makes Search feel empty | Lead with Check a Job, keep the demo banner honest |
 | Scope creep | Anything that doesn't help decide "real, current, worth applying" is deferred |
+
+## Phase 4 additions and decisions
+- **Auth:** Better Auth (email + password with argon2, plus magic link), per the Checkpoint 1 decision. No email provider is connected in this environment; magic links and other outbound mail log to `/dev/outbox` (dev-only, 404s in production) instead of being delivered.
+- **`analytics_event` table:** not in the original §15 list. Added because §18 requires tracking `check_submitted`, `passport_expanded`, `search_performed`, `apply_clicked`, `job_saved`, `alert_created`, `report_submitted`, and nothing else in the schema holds them.
+- **Check a Job matching:** rather than a live synchronous fetch of the employer's ATS board on every check (which risks blowing the 10s target and duplicates the ingestion pipeline), a check is matched against our own continuously-refreshed index — the same data ingestion already keeps current from the employer's own board. A match only lends its freshness/identity signals to the check when the similarity score clears the same merge threshold dedupe uses; below that, the check is scored purely on its own text so a scam message can never borrow a real employer's trust just by naming them.
+- **Similarity scoring for short pastes:** the dedupe scorer compares two full postings and leans on description-text overlap. A short pasted paraphrase will never score well on text alone against a full listing, so the checker adds a structured score (exact title + location + salary agreement) and takes the max of the two — see `src/checker/match.ts`.
+- **`/api/account/export` (§16):** exports profile, saved jobs, saved searches, notifications, and check metadata. It deliberately excludes the pasted text of past checks (encrypted at rest, never decrypted for export in this phase) to keep the export itself from becoming a second place third-party PII could leak.

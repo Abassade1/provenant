@@ -383,6 +383,7 @@ export const user = pgTable(
     email: text("email").notNull(),
     emailVerified: boolean("email_verified").notNull().default(false),
     name: text("name"),
+    image: text("image"), // Better Auth's base user model expects this column
     role: userRole("role").notNull().default("USER"),
     // Monetization field. Must never be read by src/verification (enforced by test).
     plan: userPlan("plan").notNull().default("FREE"),
@@ -390,6 +391,48 @@ export const user = pgTable(
   },
   (t) => [uniqueIndex("user_email_uq").on(t.email)],
 );
+
+// ── Better Auth (session/account/verification) ─────────────────────────────
+// Required tables/columns for the Drizzle adapter (src/auth/server.ts). Kept
+// here rather than auto-generated so they sit beside the `user` table they
+// reference and go through our normal migration flow.
+
+export const session = pgTable("session", {
+  id: id(),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  token: text("token").notNull(),
+  expiresAt: ts("expires_at").notNull(),
+  ipAddress: text("ip_address"),
+  userAgent: text("user_agent"),
+  ...timestamps,
+}, (t) => [uniqueIndex("session_token_uq").on(t.token)]);
+
+export const account = pgTable("account", {
+  id: id(),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  accountId: text("account_id").notNull(), // for credentials: the user's id again
+  providerId: text("provider_id").notNull(), // "credential" for email+password
+  password: text("password"), // argon2 hash
+  accessToken: text("access_token"),
+  refreshToken: text("refresh_token"),
+  idToken: text("id_token"),
+  accessTokenExpiresAt: ts("access_token_expires_at"),
+  refreshTokenExpiresAt: ts("refresh_token_expires_at"),
+  scope: text("scope"),
+  ...timestamps,
+});
+
+export const verification = pgTable("verification", {
+  id: id(),
+  identifier: text("identifier").notNull(), // e.g. the email a magic link was sent to
+  value: text("value").notNull(),
+  expiresAt: ts("expires_at").notNull(),
+  ...timestamps,
+});
 
 export const userProfile = pgTable("user_profile", {
   id: id(),
@@ -486,3 +529,30 @@ export const adminAuditLog = pgTable("admin_audit_log", {
   after: jsonb("after"),
   ...timestamps,
 });
+
+// Analytics (brief §18). Not in the original §15 table list — added here
+// because §18 requires tracking these events and nothing else in the schema
+// holds them. Events only: no invented dashboard numbers are computed from
+// anything but real rows here or aggregates over the tables above.
+export const analyticsEventName = pgEnum("analytics_event_name", [
+  "check_submitted",
+  "passport_expanded",
+  "search_performed",
+  "apply_clicked",
+  "job_saved",
+  "alert_created",
+  "report_submitted",
+]);
+
+export const analyticsEvent = pgTable(
+  "analytics_event",
+  {
+    id: id(),
+    name: analyticsEventName("name").notNull(),
+    userId: uuid("user_id").references(() => user.id, { onDelete: "set null" }),
+    sessionId: text("session_id"),
+    properties: jsonb("properties"),
+    createdAt: ts("created_at").notNull().defaultNow(),
+  },
+  (t) => [index("analytics_event_name_idx").on(t.name, t.createdAt)],
+);

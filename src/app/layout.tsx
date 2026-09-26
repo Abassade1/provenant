@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { DemoBanner } from "@/components/DemoBanner";
+import { SiteHeader } from "@/components/site-header";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -12,6 +13,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en-CA">
       <body className="min-h-screen antialiased">
         <DemoBanner />
+        <SiteHeader />
         {children}
       </body>
     </html>
