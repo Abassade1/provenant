@@ -5,7 +5,7 @@
 A job-seeker tool for Canada. Paste any job link or recruiter message and get a **Job Passport** showing where the job really came from, whether it's still listed, and what the salary evidence says. Every claim links to its evidence.
 
 ## Status
-Phase 4 (user experience) is waiting on Checkpoint 4.
+Phase 5 (admin + hardening) is waiting on Checkpoint 5.
 
 ## Run locally
 ```bash
@@ -18,8 +18,10 @@ npm run dev                     # http://localhost:3000/admin/jobs
 npm run worker                  # pg-boss worker, ingests all sources every 6h (INGEST_CRON)
 npm run ingest [key-prefix]     # one-off ingest, e.g. `npm run ingest demo:`
 npm run recheck                 # one-off freshness recheck + re-verify (worker does this hourly)
+npm run make-admin -- you@example.com   # promote an existing user to ADMIN
 DATABASE_URL=$TEST_DATABASE_URL npm run db:migrate   # once, for the test DB
 npm test
+npm run test:e2e                # Playwright: the six §2 success steps end to end (migrates + reseeds first)
 ```
 
 ## Layout
@@ -49,8 +51,13 @@ test/              Vitest unit + DB integration tests, fixtures
 - `/sign-in` (password or magic link) · `/sign-up` · `/saved` (jobs + saved-search alerts) · `/account` (export/delete)
 - `/dev/outbox` — magic links land here; no email provider is connected in this environment (dev-only page)
 
-## Admin (dev-only, no auth yet)
-`/admin/jobs` (list) → `/admin/jobs/[id]` (full Job Passport: signals, evidence, sources, status
-history) · `/admin/review` (duplicate clusters + reports awaiting a human) · `/admin/sources`
-(source health, dead-lettered errors) · `/docs/verification` (public "How verification works",
-generated from the same rule catalog the code runs).
+## Admin
+Requires a signed-in user with role `ADMIN` (bootstrap one via `ADMIN_EMAILS` in `.env` before
+sign-up, or `npm run make-admin -- you@example.com` after). `ADMIN_DEV_OPEN=true` also allows
+access without signing in, but only outside a production build.
+
+`/admin/jobs` (list) → `/admin/jobs/[id]` (full Job Passport + a staff override, R0, always
+audited) · `/admin/review` (resolve duplicate clusters — merge or keep separate — and reports —
+uphold or dismiss) · `/admin/sources` (source health, resolve dead-lettered errors) ·
+`/admin/audit` (who did what, before/after, when) · `/docs/verification` (public "How
+verification works", generated from the same rule catalog the code runs).

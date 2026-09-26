@@ -32,3 +32,31 @@
 - **Check a Job matching:** rather than a live synchronous fetch of the employer's ATS board on every check (which risks blowing the 10s target and duplicates the ingestion pipeline), a check is matched against our own continuously-refreshed index — the same data ingestion already keeps current from the employer's own board. A match only lends its freshness/identity signals to the check when the similarity score clears the same merge threshold dedupe uses; below that, the check is scored purely on its own text so a scam message can never borrow a real employer's trust just by naming them.
 - **Similarity scoring for short pastes:** the dedupe scorer compares two full postings and leans on description-text overlap. A short pasted paraphrase will never score well on text alone against a full listing, so the checker adds a structured score (exact title + location + salary agreement) and takes the max of the two — see `src/checker/match.ts`.
 - **`/api/account/export` (§16):** exports profile, saved jobs, saved searches, notifications, and check metadata. It deliberately excludes the pasted text of past checks (encrypted at rest, never decrypted for export in this phase) to keep the export itself from becoming a second place third-party PII could leak.
+
+## Phase 5 additions and decisions
+- **Real admin authorization.** Admin routes now require a signed-in user with `role = ADMIN`
+  (`src/lib/admin-guard.ts`), verified live: a bootstrap admin (via `ADMIN_EMAILS`) gets in, a
+  regular signed-up user gets a 404. The Phase 2 `ADMIN_DEV_OPEN` bypass still works for local
+  iteration but only outside a production build.
+- **Admin actions + audit log.** Staff overrides (R0), duplicate-cluster resolution (merge / keep
+  separate), report resolution (uphold / dismiss), and dead-lettered-error resolution are all
+  live, each writing to `admin_audit_log` (who, what, before, after, when) and re-running
+  verification on any job the action touches. `revalidatePath` is wrapped defensively — it needs
+  a Next.js request-scoped store that doesn't exist when an action is invoked directly (e.g. in a
+  test), and a cache-invalidation hint failing should never break the actual mutation.
+- **Playwright E2E for the six success steps** (`e2e/`, `npm run test:e2e`) — one spec per step
+  in `docs/02-user-stories.md`, run against the seeded demo data. This surfaced two real bugs,
+  not just test-authoring issues:
+  1. The job detail page's "already saved" check was missing its `userId` filter, so any
+     signed-in user saw a job as saved if *any* user had ever saved it. Fixed in
+     `src/app/jobs/[id]/page.tsx`.
+  2. `SaveSearchForm` set the success notice and collapsed the form in the same state update, so
+     the confirmation text was thrown away in the render it appeared in and never actually
+     painted. Fixed by keeping a `saved` state that renders the notice outside the collapsible
+     form instead of inside it.
+  Also fixed the "jobs without a salary sort last" note, which was gated on `salaryMin` being set
+  instead of on `sort === "salary"` as the copy claims.
+- **Accessibility pass:** all theme color pairs already clear WCAG AA (verified: text ≥ 6.5:1,
+  UI/large text ≥ 7:1 in both themes); added a skip-to-content link, labelled the two previously
+  placeholder-only Check a Job inputs and the report textarea, and promoted the Job Passport's
+  section title to a real heading so it appears in heading-based navigation.

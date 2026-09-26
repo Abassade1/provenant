@@ -23,6 +23,18 @@ export const auth = betterAuth({
       plan: { type: "string", input: false, defaultValue: "FREE" },
     },
   },
+  databaseHooks: {
+    user: {
+      create: {
+        // Bootstrap: emails listed in ADMIN_EMAILS become ADMIN on sign-up.
+        // Promoting an existing user is scripts/make-admin.ts.
+        before: async (u) => {
+          const admins = (process.env.ADMIN_EMAILS ?? "").split(",").map((e) => e.trim().toLowerCase()).filter(Boolean);
+          if (admins.includes(u.email.toLowerCase())) return { data: { ...u, role: "ADMIN" } };
+        },
+      },
+    },
+  },
   emailAndPassword: {
     enabled: true,
     password: {

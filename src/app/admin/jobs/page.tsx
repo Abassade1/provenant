@@ -1,7 +1,7 @@
 import { desc, eq, sql } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { canonicalJob, employer, ingestionError, ingestionRun, jobSourceRecord, source } from "@/db/schema";
-import { requireAdminDev } from "@/lib/admin-guard";
+import { requireAdmin } from "@/lib/admin-guard";
 import { AdminNav } from "@/components/admin-nav";
 import Link from "next/link";
 
@@ -11,7 +11,7 @@ const fmt = (d: Date | null) =>
   d ? d.toLocaleString("en-CA", { dateStyle: "medium", timeStyle: "short", timeZone: "America/Toronto" }) : "—";
 
 export default async function AdminJobsPage() {
-  requireAdminDev();
+  await requireAdmin();
   const db = getDb();
 
   const [jobs, runs, openErrors] = await Promise.all([

@@ -101,7 +101,7 @@ export function Passport(props: PassportProps) {
 
   return (
     <section className="rounded-lg border border-line bg-[var(--bg)] p-5" aria-label="Job Passport">
-      <p className="font-mono text-xs uppercase tracking-wide text-muted">Job Passport</p>
+      <h2 className="font-mono text-xs uppercase tracking-wide text-muted">Job Passport</h2>
       <h2 className="mt-1 text-lg font-semibold">
         {title} · {employerName}
         {demoSuffix}

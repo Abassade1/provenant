@@ -1,8 +1,9 @@
 import { and, desc, eq, isNull, sql } from "drizzle-orm";
 import { AdminNav } from "@/components/admin-nav";
+import { ResolveErrorButton } from "@/components/admin/resolve-error-button";
 import { getDb } from "@/db/client";
 import { employer, ingestionError, source } from "@/db/schema";
-import { requireAdminDev } from "@/lib/admin-guard";
+import { requireAdmin } from "@/lib/admin-guard";
 
 export const dynamic = "force-dynamic";
 
@@ -10,7 +11,7 @@ const fmt = (d: Date | null) =>
   d ? d.toLocaleString("en-CA", { dateStyle: "medium", timeStyle: "short", timeZone: "America/Toronto" }) : "never";
 
 export default async function SourceHealthPage() {
-  requireAdminDev();
+  await requireAdmin();
   const db = getDb();
 
   const [sources, errors] = await Promise.all([
@@ -87,6 +88,9 @@ export default async function SourceHealthPage() {
               {e.sourceKey} · {e.stage} · {e.retryCount} retries · {fmt(e.deadLetteredAt)}
             </div>
             <div className="mt-1 font-mono text-xs">{e.message}</div>
+            <div className="mt-2">
+              <ResolveErrorButton errorId={e.id} />
+            </div>
           </li>
         ))}
         {errors.length === 0 && <li className="text-muted">No open errors.</li>}

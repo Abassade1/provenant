@@ -4,6 +4,7 @@ const LINKS = [
   { href: "/admin/jobs", label: "Jobs" },
   { href: "/admin/review", label: "Review queue" },
   { href: "/admin/sources", label: "Source health" },
+  { href: "/admin/audit", label: "Audit log" },
 ];
 
 export function AdminNav({ active }: { active: string }) {

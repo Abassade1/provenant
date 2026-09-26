@@ -174,7 +174,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
       <div className="mt-4 flex items-center justify-between">
         <p className="text-sm text-muted">
           {result.total} result{result.total === 1 ? "" : "s"}
-          {filters.salaryMin && " · jobs without a salary sort last and say so"}
+          {filters.sort === "salary" && " · jobs without a salary sort last and say so"}
         </p>
         <SaveSearchForm filters={filters} signedIn={!!session?.user} />
       </div>

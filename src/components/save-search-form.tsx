@@ -9,12 +9,24 @@ export function SaveSearchForm({ filters, signedIn }: { filters: SearchFilters; 
   const [name, setName] = useState("");
   const [pending, startTransition] = useTransition();
   const [notice, setNotice] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
 
   if (!signedIn) {
     return (
       <a href="/sign-in" className="text-sm text-accent underline">
         Sign in to save this search and get alerts
       </a>
+    );
+  }
+
+  // Collapsing on success (instead of leaving the form open) previously threw the
+  // confirmation away in the same render it appeared in, since the notice only
+  // rendered inside the "open" branch — show it here, outside that branch, once saved.
+  if (saved) {
+    return (
+      <span role="status" className="text-sm text-muted">
+        {notice}
+      </span>
     );
   }
   if (!open) {
@@ -31,8 +43,12 @@ export function SaveSearchForm({ filters, signedIn }: { filters: SearchFilters; 
         e.preventDefault();
         startTransition(async () => {
           const result = await createSavedSearch(name, filters);
-          setNotice("error" in result ? result.error : "Saved. You'll get an alert when new matches appear.");
-          if (!("error" in result)) setOpen(false);
+          if ("error" in result) {
+            setNotice(result.error);
+          } else {
+            setNotice("Saved. You'll get an alert when new matches appear.");
+            setSaved(true);
+          }
         });
       }}
     >

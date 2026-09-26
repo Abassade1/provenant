@@ -12,9 +12,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en-CA">
       <body className="min-h-screen antialiased">
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded focus:bg-[var(--accent)] focus:px-4 focus:py-2 focus:text-[var(--bg)]"
+        >
+          Skip to content
+        </a>
         <DemoBanner />
         <SiteHeader />
-        {children}
+        <div id="main-content">{children}</div>
       </body>
     </html>
   );

@@ -1,4 +1,4 @@
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getSession } from "@/auth/session";
@@ -39,7 +39,7 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
       ? db
           .select({ id: savedJob.id })
           .from(savedJob)
-          .where(eq(savedJob.canonicalJobId, id))
+          .where(and(eq(savedJob.canonicalJobId, id), eq(savedJob.userId, session.user.id)))
           .then((r) => r.length > 0)
       : Promise.resolve(false),
   ]);

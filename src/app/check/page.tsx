@@ -48,24 +48,36 @@ export default function CheckAJobPage() {
         </div>
 
         {mode === "url" ? (
-          <input
-            type="url"
-            required
-            value={url}
-            onChange={(e) => setUrl(e.target.value)}
-            placeholder="https://…"
-            className="mt-2 w-full rounded border border-line bg-transparent px-3 py-2"
-          />
+          <>
+            <label htmlFor="check-url" className="sr-only">
+              Job URL
+            </label>
+            <input
+              id="check-url"
+              type="url"
+              required
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              placeholder="https://…"
+              className="mt-2 w-full rounded border border-line bg-transparent px-3 py-2"
+            />
+          </>
         ) : (
-          <textarea
-            required
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            placeholder="Paste the posting, recruiter email, or message text here…"
-            rows={8}
-            maxLength={20000}
-            className="mt-2 w-full rounded border border-line bg-transparent px-3 py-2"
-          />
+          <>
+            <label htmlFor="check-text" className="sr-only">
+              Posting, recruiter email, or message text
+            </label>
+            <textarea
+              id="check-text"
+              required
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              placeholder="Paste the posting, recruiter email, or message text here…"
+              rows={8}
+              maxLength={20000}
+              className="mt-2 w-full rounded border border-line bg-transparent px-3 py-2"
+            />
+          </>
         )}
 
         <div className="mt-3">

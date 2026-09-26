@@ -1,10 +1,11 @@
 import { desc, eq } from "drizzle-orm";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { OverrideForm } from "@/components/admin/override-form";
 import { getDb } from "@/db/client";
 import { canonicalJob, employer, jobSourceRecord, salaryEvidence, source, verificationStatusHistory } from "@/db/schema";
 import { currentSignals } from "@/evidence/verify-job";
-import { requireAdminDev } from "@/lib/admin-guard";
+import { requireAdmin } from "@/lib/admin-guard";
 import { SIGNALS, STATUS_LABELS } from "@/verification";
 
 export const dynamic = "force-dynamic";
@@ -18,7 +19,7 @@ const fmt = (d: Date | null) =>
  * Passport will use. This is how we QA the rule engine, not the consumer UI.
  */
 export default async function AdminJobDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  requireAdminDev();
+  await requireAdmin();
   const { id } = await params;
   const db = getDb();
 
@@ -94,6 +95,10 @@ export default async function AdminJobDetailPage({ params }: { params: Promise<{
           <dt className="text-muted">Also found on</dt>
           <dd>{records.length} source{records.length === 1 ? "" : "s"}</dd>
         </dl>
+      </section>
+
+      <section className="mt-6">
+        <OverrideForm jobId={id} current={{ status: j.overrideStatus, note: j.overrideNote }} />
       </section>
 
       <section className="mt-6">

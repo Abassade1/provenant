@@ -48,6 +48,7 @@ export function ReportButton({ jobId }: { jobId: string }) {
         ))}
       </fieldset>
       <textarea
+        aria-label="Anything else we should know? (optional)"
         value={details}
         onChange={(e) => setDetails(e.target.value)}
         placeholder="Anything else we should know? (optional)"
