@@ -16,7 +16,9 @@
     "worker": "tsx scripts/worker.ts",
     "recheck": "tsx scripts/recheck.ts",
     "make-admin": "tsx scripts/make-admin.ts",
-    "test:e2e": "npm run db:migrate && npm run db:seed && PLAYWRIGHT_CHROMIUM_PATH=/opt/pw-browsers/chromium-1194/chrome-linux/chrome playwright test"
+    "test:e2e": "npm run db:migrate && npm run db:seed && PLAYWRIGHT_CHROMIUM_PATH=/opt/pw-browsers/chromium-1194/chrome-linux/chrome playwright test",
+    "purge-checks": "tsx scripts/purge-checks.ts",
+    "generate-alerts": "tsx scripts/generate-alerts.ts"
   },
   "dependencies": {
     "@node-rs/argon2": "^2.2.1",

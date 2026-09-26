@@ -31,12 +31,32 @@ export interface EmployerMatch {
   domains: string[];
 }
 
+export interface DisplaySource {
+  id: string;
+  sourceName: string;
+  employerOwned: boolean;
+  url: string;
+  lastVerifiedAt: Date | null;
+  expiredAt: Date | null;
+}
+
+export interface DisplaySalary {
+  id: string;
+  min: number | null;
+  max: number | null;
+  period: string | null;
+  derived: boolean;
+}
+
 export interface JobMatch {
   canonicalJobId: string;
   score: number;
   isStrongMatch: boolean; // score >= MERGE_THRESHOLD — safe to inherit the indexed job's freshness signals
   sources: SourceRecordInput[];
   lastVerifiedAt: Date | null;
+  /** The matched job's own evidence, for display — only meaningful when isStrongMatch. */
+  displaySources: DisplaySource[];
+  displaySalaries: DisplaySalary[];
 }
 
 /** Look up an employer we already know by name (same normalization dedupe uses for aliasing). */
@@ -119,6 +139,7 @@ export async function findMatchingJob(
 
   const recs = await db
     .select({
+      recordId: jobSourceRecord.id,
       sourceId: source.id,
       sourceName: source.name,
       employerOwned: source.employerOwned,
@@ -132,6 +153,10 @@ export async function findMatchingJob(
     .from(jobSourceRecord)
     .innerJoin(source, eq(source.id, jobSourceRecord.sourceId))
     .where(eq(jobSourceRecord.canonicalJobId, best.job.id));
+  const bestSalaryRows = await db
+    .select()
+    .from(salaryEvidence)
+    .where(eq(salaryEvidence.canonicalJobId, best.job.id));
 
   return {
     canonicalJobId: best.job.id,
@@ -152,6 +177,21 @@ export async function findMatchingJob(
         expiredAt: r.expiredAt,
       };
     }),
+    displaySources: recs.map((r) => ({
+      id: r.recordId,
+      sourceName: r.sourceName,
+      employerOwned: r.employerOwned,
+      url: r.url,
+      lastVerifiedAt: r.lastVerifiedAt,
+      expiredAt: r.expiredAt,
+    })),
+    displaySalaries: bestSalaryRows.map((s) => ({
+      id: s.id,
+      min: s.min != null ? Number(s.min) : null,
+      max: s.max != null ? Number(s.max) : null,
+      period: s.period,
+      derived: s.derived,
+    })),
   };
 }
 

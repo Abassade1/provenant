@@ -4,6 +4,8 @@ import { log } from "@/lib/log";
 import { configuredSources } from "@/sources/registry";
 import { jobsNeedingTimeBasedReverify, recheckDue } from "@/evidence/freshness";
 import { knownDomains, verifyJob } from "@/evidence/verify-job";
+import { generateSavedSearchAlerts } from "@/evidence/alerts";
+import { purgeExpiredChecks } from "@/checker/purge";
 import { runSource } from "./run";
 
 export const QUEUES = {
@@ -11,6 +13,8 @@ export const QUEUES = {
   ingestSource: "ingest-source",
   ingestDead: "ingest-dead-letter",
   recheck: "freshness-recheck",
+  purgeChecks: "purge-expired-checks",
+  savedSearchAlerts: "saved-search-alerts",
 } as const;
 
 /** Recheck due postings, then re-verify every job whose time-based signals may have changed. */
@@ -28,7 +32,14 @@ export async function recheckAndReverify(db: DB, now = new Date()) {
  * run up to 3 times with exponential backoff, then moves it to the
  * dead-letter queue. (Per-posting retries happen inside runSource.)
  */
-export async function startWorker(db: DB, connectionString: string, cron = "0 */6 * * *", recheckCron = "15 * * * *") {
+export async function startWorker(
+  db: DB,
+  connectionString: string,
+  cron = "0 */6 * * *",
+  recheckCron = "15 * * * *",
+  purgeCron = "0 4 * * *", // once a day, off-peak
+  alertsCron = "30 * * * *", // hourly, offset from recheck
+) {
   const boss = new PgBoss(connectionString);
   boss.on("error", (e) => log("pg-boss error", { error: (e as Error).message }));
   await boss.start();
@@ -42,11 +53,24 @@ export async function startWorker(db: DB, connectionString: string, cron = "0 */
     deadLetter: QUEUES.ingestDead,
   });
   await boss.createQueue(QUEUES.recheck, { retryLimit: 3, retryBackoff: true, retryDelay: 60 });
+  await boss.createQueue(QUEUES.purgeChecks, { retryLimit: 3, retryBackoff: true, retryDelay: 60 });
+  await boss.createQueue(QUEUES.savedSearchAlerts, { retryLimit: 3, retryBackoff: true, retryDelay: 60 });
   await boss.schedule(QUEUES.ingestAll, cron);
   await boss.schedule(QUEUES.recheck, recheckCron);
+  await boss.schedule(QUEUES.purgeChecks, purgeCron);
+  await boss.schedule(QUEUES.savedSearchAlerts, alertsCron);
 
   await boss.work(QUEUES.recheck, async () => {
     log("freshness recheck finished", await recheckAndReverify(db));
+  });
+
+  await boss.work(QUEUES.purgeChecks, async () => {
+    const deleted = await purgeExpiredChecks(db);
+    log("expired job checks purged", { deleted });
+  });
+
+  await boss.work(QUEUES.savedSearchAlerts, async () => {
+    log("saved-search alerts generated", await generateSavedSearchAlerts(db));
   });
 
   await boss.work(QUEUES.ingestAll, async () => {
@@ -66,6 +90,6 @@ export async function startWorker(db: DB, connectionString: string, cron = "0 */
     log("source run dead-lettered", { key: job!.data.key });
   });
 
-  log("worker started", { cron, recheckCron });
+  log("worker started", { cron, recheckCron, purgeCron, alertsCron });
   return boss;
 }

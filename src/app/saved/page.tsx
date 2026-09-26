@@ -58,12 +58,16 @@ export default async function SavedPage() {
       ) : (
         <ul className="mt-4 space-y-2">
           {searches.map((s) => {
-            const f = searchFiltersSchema.parse(s.filters as SearchFilters);
+            const parsed = searchFiltersSchema.safeParse(s.filters as SearchFilters);
             return (
               <li key={s.id} className="flex items-center justify-between rounded border border-line p-3 text-sm">
-                <a href={`/search${filtersToQueryString(f)}`} className="text-accent underline">
-                  {s.name}
-                </a>
+                {parsed.success ? (
+                  <a href={`/search${filtersToQueryString(parsed.data)}`} className="text-accent underline">
+                    {s.name}
+                  </a>
+                ) : (
+                  <span className="text-muted">{s.name} (filters no longer valid — delete and re-save)</span>
+                )}
                 <DeleteSavedSearchButton id={s.id} />
               </li>
             );

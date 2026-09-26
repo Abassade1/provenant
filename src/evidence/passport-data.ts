@@ -39,7 +39,7 @@ export async function loadPassportProps(db: DB, jobId: string): Promise<Passport
       min: s.min != null ? Number(s.min) : null,
       max: s.max != null ? Number(s.max) : null,
       period: s.period,
-      derived: s.derived,
+      provenance: s.derived ? "extracted" : "employer",
     })),
     vacancyStatement: j.vacancyStatement,
     vacancyStatementDerived: j.vacancyStatementDerived,

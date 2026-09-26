@@ -41,8 +41,16 @@ export const bestSalary = sql<{ min: string | null; max: string | null; period: 
   limit 1
 )`;
 
-export async function searchJobs(db: DB, f: SearchFilters): Promise<SearchResult> {
+export interface SearchOptions {
+  /** Internal use (saved-search alerts): only jobs first seen after this time. Not part of the public filter schema. */
+  sinceFirstSeenAt?: Date;
+  /** Internal use: skip the page cap and return every match. */
+  unpaged?: boolean;
+}
+
+export async function searchJobs(db: DB, f: SearchFilters, opts: SearchOptions = {}): Promise<SearchResult> {
   const conditions: SQL[] = [isNull(canonicalJob.expiredAt)];
+  if (opts.sinceFirstSeenAt) conditions.push(gte(canonicalJob.firstSeenAt, opts.sinceFirstSeenAt));
 
   if (f.q) conditions.push(sql`${canonicalJob.searchTsv} @@ websearch_to_tsquery('english', ${f.q})`);
   if (f.employer) conditions.push(sql`${employer.displayName} ilike ${"%" + f.employer + "%"}`);
@@ -101,8 +109,8 @@ export async function searchJobs(db: DB, f: SearchFilters): Promise<SearchResult
       .innerJoin(employer, eq(employer.id, canonicalJob.employerId))
       .where(where)
       .orderBy(...orderBy)
-      .limit(PAGE_SIZE)
-      .offset((f.page - 1) * PAGE_SIZE),
+      .limit(opts.unpaged ? 1000 : PAGE_SIZE)
+      .offset(opts.unpaged ? 0 : (f.page - 1) * PAGE_SIZE),
     db
       .select({ n: sql<number>`count(*)::int` })
       .from(canonicalJob)

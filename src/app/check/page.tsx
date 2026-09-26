@@ -109,15 +109,17 @@ export default function CheckAJobPage() {
             identityStatus={outcome.employerIdentityStatus}
             employerDomain={outcome.employerDomain}
             salaries={
-              outcome.extracted.salary
-                ? [{ id: "check", min: outcome.extracted.salary.min ?? null, max: outcome.extracted.salary.max ?? null, period: outcome.extracted.salary.period ?? null, derived: false }]
-                : []
+              outcome.matchedSalaries.length > 0
+                ? outcome.matchedSalaries.map((s) => ({ id: s.id, min: s.min, max: s.max, period: s.period, provenance: s.derived ? "extracted" : "employer" }))
+                : outcome.extracted.salary
+                  ? [{ id: "check", min: outcome.extracted.salary.min ?? null, max: outcome.extracted.salary.max ?? null, period: outcome.extracted.salary.period ?? null, provenance: "pasted" }]
+                  : []
             }
             vacancyStatement={outcome.extracted.vacancyStatement}
             vacancyStatementDerived={false}
             postedAt={null}
             lastVerifiedAt={outcome.verification.signals.find((s) => s.code === "RECENTLY_CONFIRMED_LIVE")?.observedAt ?? null}
-            sources={[]}
+            sources={outcome.matchedSources}
             signals={outcome.verification.signals}
             overrideNote={null}
             overrideAt={null}

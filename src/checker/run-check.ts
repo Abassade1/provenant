@@ -1,7 +1,7 @@
 import type { DB } from "@/db/client";
 import { extractFromText } from "./parse";
 import { fetchPostingText, type FetchOutcome } from "./fetch-posting";
-import { findEmployer, findMatchingJob } from "./match";
+import { findEmployer, findMatchingJob, type DisplaySalary, type DisplaySource } from "./match";
 import { knownDomains } from "@/evidence/verify-job";
 import { verify, type VerificationInput, type VerificationResult } from "@/verification";
 import type { SalaryHint } from "@/sources/types";
@@ -30,6 +30,13 @@ export interface CheckOutcome {
   matchedApplyUrl: string | null;
   employerIdentityStatus: "CONFIRMED" | "PROBABLE" | "UNKNOWN" | null;
   employerDomain: string | null;
+  /**
+   * The matched job's own sources/salary, for display — populated only on a
+   * strong match, so the Passport can show real evidence instead of
+   * re-describing the user's own pasted text as if it were that evidence.
+   */
+  matchedSources: DisplaySource[];
+  matchedSalaries: DisplaySalary[];
   verification: VerificationResult | null;
   /** For the private job_check row — never logged. */
   rawTextForStorage: string | null;
@@ -63,6 +70,8 @@ export async function runCheck(db: DB, input: CheckInput): Promise<CheckOutcome>
           matchedApplyUrl: null,
           employerIdentityStatus: null,
           employerDomain: null,
+          matchedSources: [],
+          matchedSalaries: [],
           verification: null,
           rawTextForStorage: null,
         };
@@ -81,6 +90,8 @@ export async function runCheck(db: DB, input: CheckInput): Promise<CheckOutcome>
       matchedApplyUrl: null,
       employerIdentityStatus: null,
       employerDomain: null,
+      matchedSources: [],
+      matchedSalaries: [],
       verification: null,
       rawTextForStorage: null,
     };
@@ -160,6 +171,8 @@ export async function runCheck(db: DB, input: CheckInput): Promise<CheckOutcome>
     matchedApplyUrl: match?.isStrongMatch ? (match.sources.find((s) => s.employerOwned)?.applyUrl ?? null) : null,
     employerIdentityStatus: employer?.identityStatus ?? null,
     employerDomain: employer?.domains[0] ?? null,
+    matchedSources: match?.isStrongMatch ? match.displaySources : [],
+    matchedSalaries: match?.isStrongMatch ? match.displaySalaries : [],
     verification,
     rawTextForStorage: text,
   };

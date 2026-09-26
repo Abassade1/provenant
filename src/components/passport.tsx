@@ -38,7 +38,13 @@ export interface PassportSalary {
   min: number | null;
   max: number | null;
   period: string | null;
-  derived: boolean;
+  /**
+   * Where this figure comes from, in the words shown next to it:
+   *   "employer"  — parsed from the employer's own posting
+   *   "extracted" — parsed by an automated fallback from the employer's own posting
+   *   "pasted"    — only from text the user pasted into Check a Job; not confirmed
+   */
+  provenance: "employer" | "extracted" | "pasted";
 }
 
 export interface PassportSource {
@@ -74,13 +80,19 @@ function money(n: number) {
   return n % 1 === 0 ? `$${n.toLocaleString("en-CA")}` : `$${n.toFixed(2)}`;
 }
 
+const SALARY_LABEL: Record<PassportSalary["provenance"], string> = {
+  employer: "employer advertised",
+  extracted: "extracted automatically",
+  pasted: "from the text you pasted — not confirmed by the employer",
+};
+
 function SalaryLine({ s }: { s: PassportSalary }) {
   const range = s.min && s.max && s.min !== s.max ? `${money(s.min)}–${money(s.max)}` : money(s.max ?? s.min ?? 0);
   const per = s.period ? ` / ${s.period.toLowerCase()}` : "";
   return (
     <div>
       {range}
-      {per} — {s.derived ? "extracted automatically" : "employer advertised"}
+      {per} — {SALARY_LABEL[s.provenance]}
     </div>
   );
 }
@@ -162,7 +174,11 @@ export function Passport(props: PassportProps) {
 
         <dt className="text-muted">Also found on</dt>
         <dd>
-          {sources.length <= 1 ? "This is the only source we found." : `${sources.length} sources`}
+          {sources.length === 0
+            ? "We haven't matched this to anything in our index."
+            : sources.length === 1
+              ? "This is the only source we found."
+              : `${sources.length} sources`}
           {sources.length > 1 && (
             <ul className="mt-1 list-inside list-disc">
               {sources.map((s) => (
